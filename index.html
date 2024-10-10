@@ -12,7 +12,7 @@
 </head>
 <body>
     <div class="main1">
-        <img class="logo" src="logo.png" alt="KampusKonect Logo">
+        <img class="logo" src="logo.png" alt="MySente logo">
         <p class="p1">Sign in to MySente</p>
         <form id="signin-form" class="form" method="post">
             <label for="email">Email</label>
@@ -59,6 +59,18 @@
         const db = getDatabase(app);
         const messaging = getMessaging(app);
 
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('firebase-messaging-sw.js')
+                .then((registration) => {
+                    messaging.useServiceWorker(registration);
+                    console.log('Service Worker Registered');
+                })
+                .catch((error) => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        }
+
         // Request permission for notifications and get token
         Notification.requestPermission().then((permission) => {
             if (permission === 'granted') {
@@ -77,20 +89,14 @@
 
         // Listen for messages when your web app is in the foreground
         onMessage(messaging, (payload) => {
-            console.log('Message received. ', payload);
+            console.log('Message received: ', payload);
             if (payload.notification) {
-                const notificationTitle = payload.notification.title;
-                const notificationOptions = {
-                    body: payload.notification.body,
-                    icon: payload.notification.icon || '/default-icon.png' // Change the icon path as needed
-                };
-                try {
-                    new Notification(notificationTitle, notificationOptions);
-                } catch (error) {
-                    console.error('Failed to create notification:', error);
-                }
-            } else {
-                console.error('Invalid notification payload:', payload);
+                navigator.serviceWorker.ready.then((registration) => {
+                    registration.showNotification(payload.notification.title, {
+                        body: payload.notification.body,
+                        icon: payload.notification.icon || '/default-icon.png'
+                    });
+                });
             }
         });
 
@@ -151,10 +157,12 @@
                 }
             };
 
-            // Send notification in foreground
-            new Notification(payload.notification.title, {
-                body: payload.notification.body,
-                icon: payload.notification.icon
+            // Show notification via service worker
+            navigator.serviceWorker.ready.then((registration) => {
+                registration.showNotification(payload.notification.title, {
+                    body: payload.notification.body,
+                    icon: payload.notification.icon
+                });
             });
         }
     </script>
