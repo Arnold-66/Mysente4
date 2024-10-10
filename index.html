@@ -70,20 +70,28 @@
                     .catch((err) => {
                         console.error('Error getting FCM token:', err);
                     });
+            } else {
+                console.error('Notification permission not granted');
             }
         });
 
         // Listen for messages when your web app is in the foreground
         onMessage(messaging, (payload) => {
             console.log('Message received. ', payload);
-            // Customize notification here
-            const notificationTitle = payload.notification.title;
-            const notificationOptions = {
-                body: payload.notification.body,
-                icon: '/firebase-logo.png' // Change the icon path as needed
-            };
-
-            new Notification(notificationTitle, notificationOptions);
+            if (payload.notification) {
+                const notificationTitle = payload.notification.title;
+                const notificationOptions = {
+                    body: payload.notification.body,
+                    icon: payload.notification.icon || '/default-icon.png' // Change the icon path as needed
+                };
+                try {
+                    new Notification(notificationTitle, notificationOptions);
+                } catch (error) {
+                    console.error('Failed to create notification:', error);
+                }
+            } else {
+                console.error('Invalid notification payload:', payload);
+            }
         });
 
         // Google Sign-In event listener
