@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="styles.css" rel="stylesheet">
+    <title>Sign up</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div class="main1">
+        <img class="logo" src="logo.png" alt="MySente logo">
+        <p class="p1">Sign up to MySente</p>
+        <form id="signup-form" action="#" class="form1" method="post">
+            <label for="email">Email</label>
+            <input id="email" type="email" class="email" name="email" required>
+           
+            <label for="password">Password</label>
+            <input id="password" type="password" class="password" name="password" required>
+           
+            <label for="confirm-password">Confirm Password</label>
+            <input id="confirm-password" type="password" class="password" name="confirm-password" required>
+           
+            <input type="submit" class="submit" value="Submit">
+        </form>
+
+        <div class="sgnopt2">
+            <!-- Google Sign-In Button -->
+            <button id="google-btn" class="submit">Sign In With Google</button>
+        </div>
+
+        <p class="dont">Already have an account? <a href="sign_in.html">Sign in</a></p>
+    </div>
+
+    <script type="module">
+        // Firebase configuration and Google sign-in implementation
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBe1nnzEVZdI0aovRXQ78gWyfdKKsXHRI4",
+            authDomain: "mysente-3ae15.firebaseapp.com",
+            projectId: "mysente-3ae15",
+            storageBucket: "mysente-3ae15.appspot.com",
+            messagingSenderId: "462534406115",
+            appId: "1:462534406115:web:0294ae9d0aa9e65213bad6",
+            measurementId: "G-BGM1Y5PFJE"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app); // Initialize the database
+        auth.languageCode = 'en';
+        const provider = new GoogleAuthProvider();
+
+        // Google Sign-In event listener
+        const googleLogin = document.getElementById("google-btn");
+        googleLogin.addEventListener("click", function() {
+            signInWithPopup(auth, provider)
+            .then((result) => {
+                const user = result.user;
+                console.log(user);
+                window.location.href = "main.html"; // Redirect on success
+            })
+            .catch((error) => {
+                console.error("Error:", error.message);
+                alert("Error signing in with Google: " + error.message); // User feedback
+            });
+        });
+
+        // Register user using email and password
+        const form = document.getElementById("signup-form");
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirm-password").value;
+
+            if (password === confirmPassword) {
+                createUserWithEmailAndPassword(auth, email, password)
+                .then((credentials) => {
+                    console.log("User registered:", credentials.user);
+                    set(ref(db, 'UsersAuthList/' + credentials.user.uid), {
+                        Email: email
+                    })
+                    .then(() => {
+                        sessionStorage.setItem("user-creds", JSON.stringify(credentials.user));
+                        window.location.href = "main.html"; // Redirect on successful sign-up
+                    })
+                    .catch((error) => {
+                        console.error("Database error:", error.message);
+                        alert("Error saving user data: " + error.message); // User feedback
+                    });
+                })
+                .catch((error) => {
+                    alert("Sign-up error: " + error.message); // User feedback
+                    console.log(error.code);
+                });
+            } else {
+                alert("Passwords do not match.");
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="styles.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js" defer type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js" defer type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js" defer type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js" defer type="module"></script>
+    <title>Sign in</title>
+</head>
+<body>
+    <div class="main1">
+        <img class="logo" src="logo.png" alt="KampusKonect Logo">
+        <p class="p1">Sign in to MySente</p>
+        <form id="signin-form" class="form" method="post">
+            <label for="email">Email</label>
+            <input id="email" type="email" name="email" class="email" required>
+           
+            <label for="password" class="passwordl">
+                Password
+                <a href="fpass.html"><span>Forgot Password?</span></a>
+            </label>
+            <input id="password" type="password" name="password" class="password" required>
+           
+            <input type="submit" class="submit" value="Login">
+        </form>
+
+        <div class="sgnopt">
+            <!-- Google Sign-In Button -->
+            <button id="google-btn" class="submit">Sign In With Google</button>
+        </div>
+            
+        <p class="dont">New to KampusKonect? <a href="sign up.html">Create account</a></p>
+    </div>
+
+    <script type="module">
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBe1nnzEVZdI0aovRXQ78gWyfdKKsXHRI4",
+            authDomain: "mysente-3ae15.firebaseapp.com",
+            projectId: "mysente-3ae15",
+            storageBucket: "mysente-3ae15.appspot.com",
+            messagingSenderId: "462534406115",
+            appId: "1:462534406115:web:0294ae9d0aa9e65213bad6",
+            measurementId: "G-BGM1Y5PFJE"
+        };
+
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const messaging = getMessaging(app);
+
+        // Request permission for notifications and get token
+        Notification.requestPermission().then((permission) => {
+            if (permission === 'granted') {
+                getToken(messaging, { vapidKey: 'BKzfzA9CIv0pGgXYWx4wmWFgR6wjeAt0V6NsepjADHkbDfmwqS-Rgo9-PZlGqrEjdRkfYcaJx_bjgPVzxB1bIWY' })
+                    .then((token) => {
+                        console.log("FCM Token:", token);
+                        // You can save the token to your database if needed
+                    })
+                    .catch((err) => {
+                        console.error('Error getting FCM token:', err);
+                    });
+            }
+        });
+
+        // Listen for messages when your web app is in the foreground
+        onMessage(messaging, (payload) => {
+            console.log('Message received. ', payload);
+            // Customize notification here
+            const notificationTitle = payload.notification.title;
+            const notificationOptions = {
+                body: payload.notification.body,
+                icon: '/firebase-logo.png' // Change the icon path as needed
+            };
+
+            new Notification(notificationTitle, notificationOptions);
+        });
+
+        // Google Sign-In event listener
+        const googleLogin = document.getElementById("google-btn");
+        googleLogin.addEventListener("click", function() {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    const user = result.user;
+                    console.log(user);
+                    sendWelcomeNotification(); // Send welcome notification after login
+                    window.location.href = "main.html"; // Redirect on success
+                })
+                .catch((error) => {
+                    console.error("Error:", error.message);
+                });
+        });
+
+        // Sign in using email and password
+        const form = document.getElementById("signin-form");
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then((credentials) => {
+                    const dbref = ref(db);
+                    get(child(dbref, 'UsersAuthList/' + credentials.user.uid))
+                        .then((snapshot) => {
+                            if (snapshot.exists()) {
+                                sessionStorage.setItem("user-info", JSON.stringify({
+                                    Email: snapshot.val().email,
+                                    password: snapshot.val().password
+                                }));
+                            }
+                        });
+
+                    sendWelcomeNotification(); // Send welcome notification after login
+                    window.location.href = "main.html"; // Redirect on successful sign-in
+                })
+                .catch((error) => {
+                    alert(error.message);
+                    console.log(error.code);
+                    console.log(error.message);
+                });
+        });
+
+        // Function to send welcome notification
+        function sendWelcomeNotification() {
+            const payload = {
+                notification: {
+                    title: 'Welcome!',
+                    body: 'You have successfully logged in to MySente!',
+                    icon: '/firebase-logo.png' // Change the icon path as needed
+                }
+            };
+
+            // Send notification in foreground
+            new Notification(payload.notification.title, {
+                body: payload.notification.body,
+                icon: payload.notification.icon
+            });
+        }
+    </script>
+</body>
+</html>

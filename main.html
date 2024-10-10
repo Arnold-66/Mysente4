@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-firestore.js"></script>
+    <title>MySente</title>
+    <style>
+    /* Basic styles */
+    body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin-left: -1em;
+            padding: 0;
+            background-color: rgb(17, 17, 17);
+            color: white;
+        }
+        h2 {
+            text-align: center;
+            color: white;
+        }
+        h1 {
+            text-align: center;
+            margin-top: -1em;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        /* Responsive design */
+        @media (max-width: 768px) {
+            #balance-section  {
+                width: 24em;
+                margin-left: 1px;
+            
+            }
+            #add-income {
+                width: 24em;
+                margin-left: 1px;
+            
+            }
+            #add-expense {
+                width: 24em;
+                margin-left: 1px;
+                margin-top: 2px;
+            
+            }
+            #expense-list-section {
+                width: 24em;
+                margin-left: 1px;
+                height: 12.5em;
+            
+            }
+            #main {
+            display: table-row;
+        }
+        #income-name, #income-amount, #expense-name, #expense-amount {
+            width: 28em;
+        }
+
+        }
+        /* Profile section */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .profile-header img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        .profile-header h3 {
+            margin: 0;
+        }
+        .profile-header {
+            background-color: black;
+        }
+        /* Balance section */
+        #balance-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        #balance-display {
+            font-size: 2rem;
+        }
+
+        /* Input fields */
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        input[type="text"] {
+            width: 20em;
+            padding: 6px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: rgb(17, 17, 17);
+            color: white;
+        }
+        input[type="number"], select {
+            width: 20em;
+            padding: 6px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: rgb(17, 17, 17);
+            color: white;
+        }
+        #profile-name {
+            width: 270px;
+            padding: 6px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #expense-limit {
+            width: 270px;
+            padding: 6px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 6px 20px;
+            background-color: lightseagreen;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: rgb(39, 139, 134);
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        /* Dropdown styles */
+        #dropdown-menu {
+            position: relative;
+        }
+        #dropdown-icon:hover {
+            cursor: pointer;
+        }
+        #back {
+            float: right;
+        }
+        .profile {
+            margin-top: 5px;
+            display: none;
+            width: 20em;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: rgb(24, 24, 24);
+        }
+        #dropdown-content {
+            display: none;
+            position: absolute;
+            left: 2em;
+            background-color: black;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            width: 350px;
+            height: auto;
+            padding: 12px;
+        }
+        .menu-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #ccc;
+            background-color: black;
+        }
+        /* Profile input styles */
+        .profile-input {
+            margin: 10px 0;
+        }
+        #save-profile-btn {
+            float: right;
+            margin-top: -2.5em;
+            padding: 6px;
+
+        }
+        #settings-content {
+            margin-top: 5px;
+            display: none;
+            border: none;
+            border-radius: 5px;
+            background-color: rgb(24, 24, 24);
+            width: 20em;
+            padding: 12px;
+            
+        }
+        /* Section styling */
+        .main {
+            display: flex;
+        }
+        .add-income, .add-expense, .balance-section, .expense-list {
+            width: 22.14em;
+            background-color: black;
+        }
+        .add-income {
+            width: 22.14;
+            margin-left: 2em;
+        }
+        .expense-list-section {
+            width: 24em;
+            margin-left: 2em;
+        }
+        section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: black;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #expense-list, #income-flow-list {
+            list-style: none;
+            padding: 0;
+        }
+        #income-flow-section {
+            margin-top: 5px;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            background-color: rgb(24, 24, 24);
+            width: 20.7em;
+        }
+        #expense-list li, #income-flow-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        #income-flow-section {
+            display: none;
+        }
+        #feedback-content {
+            display: none;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            background-color: rgb(24, 24, 24);
+            width: 20.7em;
+            
+        }
+        #feedback-info {
+            margin-top: 5px;
+            padding: 12px;
+            border: none;
+            
+
+        }
+        textarea{
+            margin-top: 3px;
+            margin-bottom: 8px;
+            color: white; 
+            background-color: rgb(17, 17, 17); 
+            border-radius: 5px; 
+            border: none;
+        } 
+        textarea:hover{
+            border: 1px solid rgb(0, 0, 0);
+        } 
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="dropdown-menu">
+            <div id="dropdown-icon" style="font-size: 1.5em;">☰</div>
+            <div id="dropdown-content">
+                <button id="back">X</button>
+                <div class="menu-item">
+                    <div class="profile-header">
+                        <img id="profile-picture" src="" alt="Profile Picture">
+                        <h3 id="profile-display-name">User Name</h3>
+                    </div>
+                    <!--Profile Section-->
+                    <div id="profile1">Profile</div>
+                    <div class="profile" id="profile">
+                        <input type="text" id="profile-name" class="profile-input" placeholder="Change Name">
+                        <input type="file" id="profile-image" class="profile-input" accept="image/*" >
+                        <button id="save-profile-btn">Save Profile</button>
+                        <button id="close">Close</button>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    <!--Income flow section-->
+                    <div id="income-flow">Income Flow</div>
+                    <div id="income-flow-section">
+                        <h2>Income Flow Statement</h2>
+                        <ul id="income-flow-list"></ul>
+                        <button id="close2">Close</button>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    <div id="settings-icon">Settings</div>
+                        <div id="settings-content">
+                            <div>
+                                <label for="expense-limit">Set Expense Limit</label>
+                                <input type="number" id="expense-limit" placeholder="Enter limit amount">
+                            </div>
+                            <div>
+                                <label for="limit-period">Select Limit Period</label>
+                                <select id="limit-period">
+                                    <option value="day">Day</option>
+                                    <option value="week">Week</option>
+                                    <option value="month">Month</option>
+                                </select>
+                            </div>
+                            <button id="save-settings-btn">Save Settings</button>
+                            <button id="close1">Close</button>
+                        </div>
+                </div>
+                <div class="menu-item">
+                    <div id="feedback">FeedBack</div>
+                    <div id="feedback-content">
+                        <form action="" id="feedback-info">
+                            <label for="first-name">First Name</label>
+                            <input type="text" id="first-name" required>
+                            
+                            <label for="last-name">Last Name</label>
+                            <input type="text" id="last-name" required>
+                            
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required>
+                            
+                            <textarea id="report-feedback" placeholder="Your feedback or issue report" rows="4" cols="33" required></textarea>
+                            
+                            <button id="report-btn" type="button">Report</button>
+                            <button id="close3" type="button">Close</button>
+                        </form>
+                        
+                        <div id="thank-you-message" style="display: none;">Thank you for your feedback!</div>
+                    </div>
+                    
+                </div>
+                <!-- Sign Out Section -->
+                <div class="menu-item" id="sign-out-btn">Sign Out</div>
+            </div>
+        </div>
+
+        <h1>MySente</h1>
+        <div class="main" id="main">
+        <section id="balance-section" class="balance-section">
+            <div>
+                <h2 style="margin-left: auto;">Balance: <span id="balance">Ush 0</span></h2>
+                <p>Total Income: <span id="total-income">Ush 0.00</span></p>
+                <p>Total Expenses: <span id="total-expenses">Ush 0.00</span></p>
+                <p>Remaining Balance: <span id="remaining-balance">Ush 0.00</span></p>
+            </div>
+        </section>
+        <section class="add-income " id="add-income">
+            <h2>Add Income</h2>
+            <input type="text" id="income-name" placeholder="Income Name">
+            <input type="number" id="income-amount" placeholder="Amount">
+            <button id="add-income-btn">Add Income</button>
+        </section>
+    </div>
+    <div class="main" id="main">
+        <section class="add-expense" id="add-expense">
+            <h2 id="expense-header">Add Expense</h2>
+            <input type="text" id="expense-name" placeholder="Expense Name">
+            <input type="number" id="expense-amount" placeholder="Amount">
+            <button id="add-expense-btn">Add Expense</button>
+        </section>
+    
+        <section class="expense-list-section" id="expense-list-section">
+            <h2>Expense List</h2>
+            <ul id="expense-list"></ul>
+        </section>
+    
+    </div>
+
+    <section id="income-flow-section">
+        <h2>Income Flow Statement</h2>
+        <ul id="income-flow-list"></ul>
+    </section>
+    </div>
+
+<script>
+// Load profile data from localStorage
+window.onload = function() {
+        const savedName = localStorage.getItem('profileName');
+        const savedImage = localStorage.getItem('profileImage');
+
+        if (savedName) {
+            document.getElementById('profile-display-name').innerText = savedName;
+        }
+        if (savedImage) {
+            document.getElementById('profile-picture').src = savedImage;
+        }
+    }
+
+    // Save profile data
+    document.getElementById('save-profile-btn').addEventListener('click', () => {
+        const profileName = document.getElementById('profile-name').value;
+        const profileImage = document.getElementById('profile-image').files[0];
+
+        if (profileName) {
+            localStorage.setItem('profileName', profileName);
+            document.getElementById('profile-display-name').innerText = profileName;
+        }
+
+        if (profileImage) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imageUrl = event.target.result;
+                localStorage.setItem('profileImage', imageUrl);
+                document.getElementById('profile-picture').src = imageUrl;
+            }
+            reader.readAsDataURL(profileImage);
+        }
+    });
+
+    // profile toggle functionality
+document.getElementById('profile1').addEventListener('click', () => {
+    document.getElementById('profile').style.display = 'block';
+});
+
+document.getElementById('close').addEventListener('click', () => {
+    document.getElementById('profile').style.display = 'none';
+});
+
+
+
+// Initial state variables
+let balance = 0.00;
+let totalIncome = 0;
+let totalExpenses = 0;
+let expenseLimit = null;
+let currentExpenses = 0;
+const incomes = [];
+const expenses = [];
+
+// DOM Elements
+const balanceDisplay = document.getElementById('balance');
+const totalIncomeDisplay = document.getElementById('total-income');
+const totalExpensesDisplay = document.getElementById('total-expenses');
+const remainingBalanceDisplay = document.getElementById('remaining-balance');
+const expenseList = document.getElementById('expense-list');
+const pieChart = document.getElementById('pie-chart');
+const incomeFlowList = document.getElementById('income-flow-list');
+const expenseLimitInput = document.getElementById('expense-limit');
+const limitPeriodInput = document.getElementById('limit-period');
+
+// Function to update the UI with new values
+function updateUI() {
+    balanceDisplay.innerText = `Ush ${balance.toFixed(2)}`;
+    totalIncomeDisplay.innerText = `Ush ${totalIncome.toFixed(2)}`;
+    totalExpensesDisplay.innerText = `Ush ${totalExpenses.toFixed(2)}`;
+    remainingBalanceDisplay.innerText = `Ush ${balance.toFixed(2)}`;
+}
+
+// Add Income
+document.getElementById('add-income-btn').addEventListener('click', () => {
+    const incomeName = document.getElementById('income-name').value;
+    const incomeAmount = parseFloat(document.getElementById('income-amount').value);
+
+    if (incomeName && !isNaN(incomeAmount) && incomeAmount > 0) {
+        incomes.push({ name: incomeName, amount: incomeAmount });
+        totalIncome += incomeAmount;
+        balance += incomeAmount;
+        updateIncomeFlow(incomeName, incomeAmount);
+        document.getElementById('income-name').value = '';
+        document.getElementById('income-amount').value = '';
+        updateUI();
+    }
+});
+
+// Add Expense
+document.getElementById('add-expense-btn').addEventListener('click', () => {
+    const expenseName = document.getElementById('expense-name').value;
+    const expenseAmount = parseFloat(document.getElementById('expense-amount').value);
+   
+    if (expenseLimit && currentExpenses + expenseAmount > expenseLimit) {
+        alert("You have reached your expense limit for the selected period.");
+        return;
+    }
+
+    if (expenseName && !isNaN(expenseAmount) && expenseAmount > 0) {
+        expenses.push({ name: expenseName, amount: expenseAmount });
+        totalExpenses += expenseAmount;
+        currentExpenses += expenseAmount;
+        balance -= expenseAmount;
+        addExpenseToList(expenseName, expenseAmount);
+        document.getElementById('expense-name').value = '';
+        document.getElementById('expense-amount').value = '';
+        updateUI();
+    }
+});
+
+
+// Function to add an expense to the list
+function addExpenseToList(name, amount) {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${name}</span><span style= "float: right;">Ush ${amount.toFixed(2)}</span>`;
+    document.getElementById('expense-list').appendChild(li);
+}
+
+// Function to update income flow statement
+function updateIncomeFlow(name, amount) {
+    const li = document.createElement('li');
+    li.innerText = `${name}: Ush ${amount.toFixed(2)}`;
+    incomeFlowList.appendChild(li);
+}
+
+// Settings handling
+document.getElementById('settings-icon').addEventListener('click', () => {
+    document.getElementById('settings-content').style.display = 'block';
+});
+
+
+// Save settings
+document.getElementById('save-settings-btn').addEventListener('click', () => {
+    const limit = parseFloat(expenseLimitInput.value);
+    const period = limitPeriodInput.value;
+    if (!isNaN(limit) && limit > 0) {
+        expenseLimit = limit;
+        alert(`Expense limit set to Ush ${limit} for ${period}.`);
+    } else {
+        alert('Please enter a valid limit.');
+    }
+});
+
+document.getElementById('close1').addEventListener('click', () => {
+    document.getElementById('settings-content').style.display = 'none';
+});
+
+// Sign Out functionality
+document.getElementById('sign-out-btn').addEventListener('click', () => {
+    if (confirm('Are you sure you want to sign out?')) {
+        // Clear user session data, log out, or redirect
+        alert('You have signed out.');
+        // Implement the sign-out logic here (e.g., redirect to login page or clear session storage).
+        window.location.href = 'sign in.html';
+    }
+});
+
+// Drop down toggle Functionality
+document.getElementById('dropdown-icon').addEventListener('click', () => {
+    document.getElementById('dropdown-content').style.display = 'block';
+});
+
+document.getElementById('back').addEventListener('click', () => {
+    document.getElementById('dropdown-content').style.display = 'none';
+});
+
+// Income flow functionality
+document.getElementById('income-flow').addEventListener('click', () => {
+    document.getElementById('income-flow-section').style.display = 'block';
+});
+
+document.getElementById('close2').addEventListener('click', () => {
+    document.getElementById('income-flow-section').style.display = 'none';
+});
+
+
+
+// Report issue handling
+document.getElementById('feedback').addEventListener('click', () => {
+    document.getElementById('feedback-content').style.display = 'block';
+});
+
+document.getElementById('close3').addEventListener('click', () => {
+    document.getElementById('feedback-content').style.display = 'none';
+
+
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+<script>
+    // Initialize EmailJS (replace with your own user ID)
+    (function() {
+        emailjs.init("BNU4ZaxZdT-En9QSv");
+    })();
+
+
+    // Initialize Firebase
+    const firebaseConfig = {
+  apiKey: "AIzaSyBe1nnzEVZdI0aovRXQ78gWyfdKKsXHRI4",
+  authDomain: "mysente-3ae15.firebaseapp.com",
+  projectId: "mysente-3ae15",
+  storageBucket: "mysente-3ae15.appspot.com",
+  messagingSenderId: "462534406115",
+  appId: "1:462534406115:web:0294ae9d0aa9e65213bad6",
+  measurementId: "G-BGM1Y5PFJE"
+};
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Function to send feedback
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("report-btn").addEventListener("click", function() {
+            const firstName = document.getElementById("first-name").value;
+            const lastName = document.getElementById("last-name").value;
+            const email = document.getElementById("email").value;
+            const feedback = document.getElementById("report-feedback").value;
+
+            // Save feedback to Firestore
+            db.collection("feedback").add({
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                feedback: feedback,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                // Send email using EmailJS
+                const templateParams = {
+                    from_name: firstName + " " + lastName,
+                    to_name: "MySente Team", // Replace with your name
+                    reply_to: email,
+                    message: feedback
+                };
+
+                emailjs.send('service_9gewcvj', 'template_zemb6j1', templateParams)
+                    .then((response) => {
+                        console.log('Email sent successfully!', response.status, response.text);
+                        // Show thank you message
+                        document.getElementById("thank-you-message").style.display = "block";
+                        // Clear the form
+                        document.getElementById("feedback-info").reset();
+                    }, (error) => {
+                        console.error('Failed to send email:', error);
+                    });
+            })
+            .catch((error) => {
+                console.error("Error adding feedback: ", error);
+            });
+        });
+    });
+</script>
+<!--<script>
+    import { initializeApp } from "firebase/app";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+
+
+const app = initializeApp(firebaseConfig);
+const functions = getFunctions(app);
+
+// Initialize Firebase (replace with your own config)
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBe1nnzEVZdI0aovRXQ78gWyfdKKsXHRI4",
+  authDomain: "mysente-3ae15.firebaseapp.com",
+  projectId: "mysente-3ae15",
+  storageBucket: "mysente-3ae15.appspot.com",
+  messagingSenderId: "462534406115",
+  appId: "1:462534406115:web:0294ae9d0aa9e65213bad6",
+  measurementId: "G-BGM1Y5PFJE"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Add EmailJS configuration (replace with your own service ID and template ID)
+const emailjsServiceID = 'service_9gewcvj';
+const emailjsTemplateID = 'template_zemb6j1';
+const emailjsUserID = 'BNU4ZaxZdT-En9QSv';
+
+// Function to send feedback
+document.getElementById("report-btn").addEventListener("click", function() {
+    const firstName = document.getElementById("first-name").value;
+    const lastName = document.getElementById("last-name").value;
+    const email = document.getElementById("email").value;
+    const feedback = document.getElementById("report-feedback").value;
+
+    // Save feedback to Firestore
+    db.collection("feedback").add({
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        feedback: feedback,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        // Send email using EmailJS
+        const templateParams = {
+            from_name: firstName + " " + lastName,
+            to_name: "MySente Team", // Replace with your name
+            reply_to: email,
+            message: feedback
+        };
+
+        emailjs.send(emailjsServiceID, emailjsTemplateID, templateParams, emailjsUserID)
+            .then((response) => {
+                console.log('Email sent successfully!', response.status, response.text);
+                // Show thank you message
+                document.getElementById("thank-you-message").style.display = "block";
+                // Clear the form
+                document.getElementById("feedback-info").reset();
+            }, (error) => {
+                console.error('Failed to send email:', error);
+            });
+    })
+    .catch((error) => {
+        console.error("Error adding feedback: ", error);
+    });
+});
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function() {
+    emailjs.init("BNU4ZaxZdT-En9QSv"); // Replace with your EmailJS public key
+  })();
+
+  document.getElementById('report-btn').addEventListener('click', function() {
+    var firstName = document.getElementById('first-name').value;
+    var lastName = document.getElementById('last-name').value;
+    var email = document.getElementById('email').value;
+    var feedback = document.getElementById('report-feedback').value;
+
+    var templateParams = {
+      first_name: firstName,
+      last_name: lastName,
+      user_email: email,
+      feedback: feedback,
+    };
+
+    emailjs.send("service_9gewcvj", "template_zemb6j1", templateParams)
+      .then(function(response) {
+        alert('Feedback sent successfully!');
+      }, function(error) {
+        alert('Failed to send feedback, please try again later.');
+      });
+  });
+
+  </script>-->
+
+
+</body>
+</html>
+
